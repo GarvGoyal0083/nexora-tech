@@ -1,6 +1,10 @@
 import base64
 import os
 from pathlib import Path
+import re
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
 import streamlit as st
 from dotenv import load_dotenv
 from google import genai
@@ -98,7 +102,35 @@ st.markdown(
         margin-bottom: 8px;
     }
 
-    /* Style the chat input bar for ChatGPT/Claude look */
+    /* Live News Pill */
+    .live-news-item {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 10px 14px;
+        margin-bottom: 8px;
+    }
+    .live-news-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #e8eaed;
+        margin-bottom: 4px;
+    }
+    .live-news-meta {
+        font-size: 0.75rem;
+        color: #9aa0a6;
+    }
+
+    /* Source citations badge */
+    .sources-box {
+        background: rgba(66, 133, 244, 0.08);
+        border: 1px solid rgba(66, 133, 244, 0.25);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-top: 10px;
+        font-size: 0.8rem;
+    }
+
     div[data-testid="stChatInput"] {
         border-radius: 24px;
     }
@@ -107,24 +139,86 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# News categories URLs
+NEWS_FEEDS = {
+    "🌍 Top Headlines": "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
+    "💻 Tech & AI": "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-US&gl=US&ceid=US:en",
+    "📈 Business & Finance": "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-US&gl=US&ceid=US:en",
+    "🔬 Science & Space": "https://news.google.com/rss/headlines/section/topic/SCIENCE?hl=en-US&gl=US&ceid=US:en",
+}
+
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_live_news_feed(feed_url: str, limit: int = 6):
+    """Fetches and parses live RSS news headlines."""
+    try:
+        req = urllib.request.Request(feed_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        with urllib.request.urlopen(req, timeout=4) as response:
+            xml_data = response.read()
+        root = ET.fromstring(xml_data)
+        items = []
+        for item in root.findall(".//item")[:limit]:
+            title = item.find("title").text if item.find("title") is not None else "Untitled"
+            link = item.find("link").text if item.find("link") is not None else ""
+            pub_date = item.find("pubDate").text if item.find("pubDate") is not None else ""
+            # Clean up source from title if format is "Headline - Source"
+            source = "Google News"
+            if " - " in title:
+                parts = title.rsplit(" - ", 1)
+                clean_title, source = parts[0], parts[1]
+            else:
+                clean_title = title
+            items.append({
+                "title": clean_title,
+                "source": source,
+                "link": link,
+                "pub_date": pub_date[:16] if pub_date else "",
+            })
+        return items
+    except Exception:
+        return []
+
+@st.cache_data(ttl=180, show_spinner=False)
+def search_live_web_news(query: str, limit: int = 4):
+    """Searches real-time web news for a specific query."""
+    try:
+        encoded = urllib.parse.quote(query)
+        url = f"https://news.google.com/rss/search?q={encoded}&hl=en-US&gl=US&ceid=US:en"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        with urllib.request.urlopen(req, timeout=4) as response:
+            xml_data = response.read()
+        root = ET.fromstring(xml_data)
+        results = []
+        for item in root.findall(".//item")[:limit]:
+            title = item.find("title").text if item.find("title") is not None else ""
+            link = item.find("link").text if item.find("link") is not None else ""
+            pub_date = item.find("pubDate").text if item.find("pubDate") is not None else ""
+            if " - " in title:
+                parts = title.rsplit(" - ", 1)
+                clean_title, source = parts[0], parts[1]
+            else:
+                clean_title, source = title, "Web"
+            results.append({
+                "title": clean_title,
+                "source": source,
+                "link": link,
+                "pub_date": pub_date[:16] if pub_date else "",
+            })
+        return results
+    except Exception:
+        return []
+
 def get_configured_api_key() -> str:
     """Retrieves API key from session state, .env, or Streamlit secrets."""
-    # 1. User session override
     if st.session_state.get("session_api_key", "").strip():
         return st.session_state["session_api_key"].strip()
-
-    # 2. Environment variable (.env)
     env_key = os.getenv("GEMINI_API_KEY", "").strip()
     if env_key:
         return env_key
-
-    # 3. Streamlit Cloud Secrets (for deployed apps)
     try:
         if "GEMINI_API_KEY" in st.secrets:
             return str(st.secrets["GEMINI_API_KEY"]).strip()
     except Exception:
         pass
-
     return ""
 
 def save_key_to_env(key: str):
@@ -146,6 +240,10 @@ def format_chat_for_export(messages) -> str:
             file_names = ", ".join([f["name"] for f in msg["files"]])
             lines.append(f"*Attached files: {file_names}*\n")
         lines.append(f"{msg['content']}\n")
+        if "sources" in msg and msg["sources"]:
+            lines.append("\n**Sources Referenced:**\n")
+            for src in msg["sources"]:
+                lines.append(f"- [{src['title']}]({src['link']}) ({src['source']})\n")
         lines.append("---\n")
     return "\n".join(lines)
 
@@ -154,6 +252,8 @@ active_key = get_configured_api_key()
 # Initialize session state variables
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "news_prompt_to_run" not in st.session_state:
+    st.session_state.news_prompt_to_run = None
 
 # Sidebar configuration
 with st.sidebar:
@@ -194,6 +294,16 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # Real-time Web Intelligence Controls
+    st.subheader("🌐 Real-Time Intelligence")
+    enable_realtime_web = st.checkbox(
+        "Live Web Grounding",
+        value=True,
+        help="Automatically retrieves live web search and breaking news context for up-to-date questions.",
+    )
+
+    st.markdown("---")
+
     # Model parameters
     st.subheader("🤖 Model")
     model_choice = st.selectbox(
@@ -226,7 +336,7 @@ with st.sidebar:
     with st.expander("🎭 Custom Persona / Instructions"):
         system_instruction = st.text_area(
             "System Prompt",
-            placeholder="e.g. You are a senior software engineer. Answer questions concisely with production-ready code.",
+            placeholder="e.g. You are a senior research analyst. Answer questions concisely with live context.",
             help="Custom instructions to guide Gemini's persona.",
         )
 
@@ -237,6 +347,7 @@ with st.sidebar:
     with col_clear:
         if st.button("🗑️ Clear", use_container_width=True):
             st.session_state.messages = []
+            st.session_state.news_prompt_to_run = None
             st.rerun()
     with col_export:
         if st.session_state.messages:
@@ -255,7 +366,7 @@ with st.sidebar:
     st.markdown(
         """
         <div style="font-size: 0.75rem; color: #70757a; text-align: center; margin-top: 1.5rem;">
-            Powered by <b>Gemini API</b> & <b>Streamlit</b>
+            Powered by <b>Gemini API</b> & <b>Live Web Feeds</b>
         </div>
         """,
         unsafe_allow_html=True,
@@ -268,23 +379,11 @@ if not active_key:
         '<div class="hero-subtitle">To get started, please provide your Google Gemini API key.</div>',
         unsafe_allow_html=True,
     )
-
     with st.container():
-        st.info(
-            """
-            **Get your API key in 30 seconds:**
-            1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey) and generate a free API key.
-            2. Paste it in the field below and click **Save & Continue**.
-            """
-        )
+        st.info("Paste your API key below and click **Save & Continue**.")
         col1, col2 = st.columns([4, 1])
         with col1:
-            direct_key = st.text_input(
-                "Gemini API Key",
-                type="password",
-                placeholder="Paste key here (starts with AIzaSy... or AQ...)",
-                label_visibility="collapsed",
-            ).strip()
+            direct_key = st.text_input("Gemini API Key", type="password", label_visibility="collapsed").strip()
         with col2:
             if st.button("Save & Continue", type="primary", use_container_width=True):
                 if direct_key:
@@ -296,11 +395,66 @@ if not active_key:
                     st.error("Please enter a key.")
     st.stop()
 
+# ----------------- LIVE NEWS FEED EXPANDER / BAR -----------------
+with st.expander("🔴 **Live News Feed & Breaking Intelligence**", expanded=False):
+    col_cat, col_search = st.columns([1.2, 1.8])
+    with col_cat:
+        selected_category = st.selectbox(
+            "Category",
+            options=list(NEWS_FEEDS.keys()),
+            label_visibility="collapsed",
+        )
+    with col_search:
+        search_topic = st.text_input(
+            "Search topic",
+            placeholder="Search live news (e.g. OpenAI, Nvidia, Elections, SpaceX)...",
+            label_visibility="collapsed",
+        ).strip()
+
+    # Fetch news based on search or category
+    if search_topic:
+        live_articles = search_live_web_news(search_topic, limit=5)
+        st.caption(f"🔎 Real-time news search results for **{search_topic}**:")
+    else:
+        live_articles = fetch_live_news_feed(NEWS_FEEDS[selected_category], limit=6)
+        st.caption(f"⚡ Latest live updates from **{selected_category}**:")
+
+    if live_articles:
+        for a_idx, article in enumerate(live_articles):
+            col_txt, col_btn = st.columns([5, 1.2])
+            with col_txt:
+                st.markdown(
+                    f"""
+                    <div class="live-news-item">
+                        <div class="live-news-title">
+                            <a href="{article['link']}" target="_blank" style="color:#e8eaed; text-decoration:none;">
+                                {article['title']} ↗
+                            </a>
+                        </div>
+                        <div class="live-news-meta">
+                            📰 <b>{article['source']}</b> &nbsp;•&nbsp; 🕒 {article['pub_date']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with col_btn:
+                st.write("")
+                if st.button("⚡ Ask Gemini", key=f"ask_news_{a_idx}", use_container_width=True):
+                    st.session_state.news_prompt_to_run = (
+                        f"Please analyze this breaking news story, provide full context, and explain why it matters:\n"
+                        f"**Headline:** {article['title']}\n"
+                        f"**Source:** {article['source']} ({article['link']})"
+                    )
+                    st.rerun()
+    else:
+        st.info("No live articles found at the moment. Try another topic or category.")
+
 # Header when chat is empty
 if len(st.session_state.messages) == 0:
     st.markdown('<div class="hero-title">✨ How can I help you today?</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="hero-subtitle">Ask questions, analyze images & documents, inspect code, or brainstorm ideas.</div>',
+        '<div class="hero-subtitle">Ask questions, analyze live news, inspect documents & images, or generate ideas.</div>',
         unsafe_allow_html=True,
     )
 
@@ -309,18 +463,18 @@ if len(st.session_state.messages) == 0:
     suggested_prompt = None
 
     with c1:
-        if st.button("⚛️  Explain Quantum Computing\n\nBreak it down for a beginner with simple analogies.", use_container_width=True):
-            suggested_prompt = "Explain quantum computing in simple terms for a beginner, with clear everyday analogies."
+        if st.button("🌐  Top World News Right Now\n\nSummarize today's major global events and headlines.", use_container_width=True):
+            suggested_prompt = "What are the biggest world news headlines and current events happening right now? Provide a clear summary with key developments."
         st.write("")
-        if st.button("🐍  Write & Optimize Code\n\nCreate a Python script to find all duplicate files in a folder.", use_container_width=True):
-            suggested_prompt = "Write a fast, clean Python script to find duplicate files in a directory using hashing."
+        if st.button("🚀  Latest AI & Tech Breakthroughs\n\nRecent developments in artificial intelligence and computing.", use_container_width=True):
+            suggested_prompt = "What are the latest breakthroughs and recent news in artificial intelligence and technology this week?"
 
     with c2:
-        if st.button("🌐  Architectural Comparison\n\nCompare REST vs GraphQL vs gRPC: trade-offs & use cases.", use_container_width=True):
-            suggested_prompt = "Compare REST, GraphQL, and gRPC with key differences, strengths, and when to use each."
+        if st.button("⚛️  Explain Quantum Computing\n\nBreak it down for a beginner with simple everyday analogies.", use_container_width=True):
+            suggested_prompt = "Explain quantum computing in simple terms for a beginner, with clear everyday analogies."
         st.write("")
-        if st.button("📄  Document & Image Analysis\n\nAttach a file using the + icon below to get instant insights.", use_container_width=True):
-            suggested_prompt = "Please explain the multimodal capabilities of Gemini, including what types of files and images you can analyze."
+        if st.button("📈  Global Economy & Markets\n\nKey trends, inflation data, and financial headlines today.", use_container_width=True):
+            suggested_prompt = "Summarize the latest financial news, global market movements, and economic headlines right now."
 else:
     suggested_prompt = None
 
@@ -341,6 +495,12 @@ for idx, msg in enumerate(st.session_state.messages):
         # Message text content
         st.markdown(msg["content"])
 
+        # Display sources if grounded with live web
+        if "sources" in msg and msg["sources"]:
+            with st.expander("🔗 **Referenced Live Web Sources**", expanded=False):
+                for src in msg["sources"]:
+                    st.markdown(f"- [{src['title']}]({src['link']}) — *{src['source']}* ({src.get('pub_date', '')})")
+
         # Assistant Actions: Copy & Export
         if msg["role"] == "assistant":
             col_act1, col_act2, _ = st.columns([1.2, 1.4, 6])
@@ -360,7 +520,7 @@ for idx, msg in enumerate(st.session_state.messages):
 
 # Modern ChatGPT / Claude style chat input with inline file attachment button (+)
 submission = st.chat_input(
-    "Ask a question or attach files (Images, PDFs, Code, Docs)...",
+    "Ask a question, search live news, or attach files (Images, PDFs, Docs)...",
     accept_file="multiple",
     file_type=["png", "jpg", "jpeg", "webp", "pdf", "txt", "py", "csv", "md", "json", "html", "js"],
 )
@@ -369,7 +529,10 @@ submission = st.chat_input(
 user_query = ""
 submitted_files = []
 
-if suggested_prompt:
+if st.session_state.news_prompt_to_run:
+    user_query = st.session_state.news_prompt_to_run
+    st.session_state.news_prompt_to_run = None
+elif suggested_prompt:
     user_query = suggested_prompt
 elif submission:
     if hasattr(submission, "text"):
@@ -379,7 +542,6 @@ elif submission:
     else:
         user_query = str(submission).strip()
 
-    # If user attached files without typing text, default to an analysis prompt
     if not user_query and submitted_files:
         user_query = "Please analyze the attached file(s) and provide a comprehensive summary and key insights."
 
@@ -407,17 +569,35 @@ if user_query or submitted_files:
 
         attached_files_meta.append(meta)
 
-        # Build Gemini part
         if is_img or mime == "application/pdf":
             gemini_file_parts.append(
                 types.Part.from_bytes(data=file_bytes, mime_type=mime)
             )
         else:
-            # Text/code/csv/json files
             text_content = file_bytes.decode("utf-8", errors="ignore")
             gemini_file_parts.append(
                 types.Part.from_text(text=f"--- Attached File: {uf.name} ---\n{text_content}\n")
             )
+
+    # Check for live real-time web search context
+    web_sources = []
+    realtime_context = ""
+    if enable_realtime_web and user_query:
+        # Determine if query mentions news, current events, recent developments, or specific live info
+        search_terms = re.sub(r"[^\w\s]", "", user_query).split()
+        key_terms = " ".join([w for w in search_terms if len(w) > 3][:6])
+        if key_terms:
+            web_sources = search_live_web_news(key_terms, limit=3)
+            if web_sources:
+                snippets = []
+                for s in web_sources:
+                    snippets.append(f"- Headline: {s['title']} (Source: {s['source']}, Published: {s['pub_date']})")
+                realtime_context = (
+                    "\n\n[REAL-TIME LIVE WEB & NEWS CONTEXT]:\n"
+                    "The following recent live news headlines and information were retrieved from real-time web search:\n"
+                    + "\n".join(snippets)
+                    + "\nUse this real-time context to provide an accurate, up-to-date answer.\n"
+                )
 
     # Append user question to session state
     st.session_state.messages.append({
@@ -452,6 +632,9 @@ if user_query or submitted_files:
                 config_args["system_instruction"] = system_instruction.strip()
             config = types.GenerateContentConfig(**config_args)
 
+            # Prepare current prompt with realtime context
+            augmented_query = user_query + realtime_context if realtime_context else user_query
+
             # Build contents
             if enable_history and len(st.session_state.messages) > 1:
                 contents = []
@@ -463,11 +646,10 @@ if user_query or submitted_files:
                             parts=[types.Part.from_text(text=msg["content"])],
                         )
                     )
-                # Current user message with any attached files
-                current_parts = gemini_file_parts + [types.Part.from_text(text=user_query)]
+                current_parts = gemini_file_parts + [types.Part.from_text(text=augmented_query)]
                 contents.append(types.Content(role="user", parts=current_parts))
             else:
-                current_parts = gemini_file_parts + [types.Part.from_text(text=user_query)]
+                current_parts = gemini_file_parts + [types.Part.from_text(text=augmented_query)]
                 contents = current_parts
 
             # Call Gemini streaming API
@@ -484,9 +666,12 @@ if user_query or submitted_files:
                     response_placeholder.markdown(full_response + "▌")
 
             response_placeholder.markdown(full_response)
+
+            # Store assistant response with web sources if any
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": full_response,
+                "sources": web_sources if web_sources else [],
             })
             st.rerun()
 
