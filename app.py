@@ -1,3 +1,4 @@
+import base64
 import os
 from pathlib import Path
 import streamlit as st
@@ -12,41 +13,125 @@ load_dotenv(dotenv_path=ENV_FILE_PATH, override=True)
 
 # Page configuration
 st.set_page_config(
-    page_title="Gemini Q&A Assistant",
+    page_title="Gemini AI Assistant",
     page_icon="✨",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom styling
+# Custom modern CSS for ChatGPT / Gemini aesthetic
 st.markdown(
     """
     <style>
-    .main-header {
-        font-size: 2.2rem;
+    /* Global styles and typography */
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* Main container max-width for chat experience */
+    .block-container {
+        max-width: 860px;
+        padding-top: 2rem;
+        padding-bottom: 5rem;
+    }
+
+    /* Gemini gradient title */
+    .hero-title {
+        font-size: 2.6rem;
         font-weight: 700;
-        margin-bottom: 0.2rem;
+        background: linear-gradient(135deg, #4285F4 0%, #9B72CB 50%, #D96570 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.3rem;
+        line-height: 1.2;
     }
-    .sub-header {
-        font-size: 1rem;
-        color: #6c757d;
-        margin-bottom: 1.5rem;
+
+    .hero-subtitle {
+        font-size: 1.15rem;
+        color: #9aa0a6;
+        margin-bottom: 2rem;
+        font-weight: 400;
     }
-    .status-box {
-        padding: 0.6rem 0.8rem;
-        border-radius: 6px;
-        font-size: 0.88rem;
+
+    /* Status badge */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.82rem;
+        font-weight: 500;
         margin-bottom: 1rem;
     }
     .status-ok {
-        background-color: #e6f4ea;
-        color: #137333;
-        border: 1px solid #ceead6;
+        background-color: rgba(52, 168, 83, 0.15);
+        color: #81c995;
+        border: 1px solid rgba(52, 168, 83, 0.3);
     }
     .status-warn {
-        background-color: #fef7e0;
-        color: #b06000;
-        border: 1px solid #feefc3;
+        background-color: rgba(251, 188, 4, 0.15);
+        color: #fdd663;
+        border: 1px solid rgba(251, 188, 4, 0.3);
+    }
+
+    /* Prompt cards */
+    .prompt-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 16px 18px;
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+        height: 100%;
+    }
+    .prompt-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+    }
+    .prompt-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #e8eaed;
+        margin-bottom: 4px;
+    }
+    .prompt-desc {
+        font-size: 0.82rem;
+        color: #9aa0a6;
+    }
+
+    /* Message bubbles */
+    .stChatMessage {
+        border-radius: 16px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    /* File badge inside chat */
+    .file-attachment-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        color: #d1d5db;
+        margin-bottom: 8px;
+    }
+
+    /* Assistant response actions toolbar */
+    .response-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
     }
     </style>
     """,
@@ -54,7 +139,7 @@ st.markdown(
 )
 
 def get_configured_api_key() -> str:
-    """Retrieves the API key from session state, .env, or Streamlit secrets."""
+    """Retrieves API key from session state, .env, or Streamlit secrets."""
     # 1. User session override
     if st.session_state.get("session_api_key", "").strip():
         return st.session_state["session_api_key"].strip()
@@ -82,59 +167,68 @@ def save_key_to_env(key: str):
     except Exception:
         pass
 
+def format_chat_for_export(messages) -> str:
+    """Formats full chat history into markdown format for export."""
+    lines = ["# 💬 Gemini AI Chat Export\n"]
+    for i, msg in enumerate(messages, 1):
+        role_label = "🧑 **User**" if msg["role"] == "user" else "✨ **Gemini Assistant**"
+        lines.append(f"### {role_label}\n")
+        if "files" in msg and msg["files"]:
+            file_names = ", ".join([f["name"] for f in msg["files"]])
+            lines.append(f"*Attached files: {file_names}*\n")
+        lines.append(f"{msg['content']}\n")
+        lines.append("---\n")
+    return "\n".join(lines)
+
 active_key = get_configured_api_key()
+
+# Initialize session state variables
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
 
 # Sidebar configuration
 with st.sidebar:
-    st.title("⚙️ Settings")
-    st.markdown("Configure your Gemini API settings below.")
+    st.markdown("### ⚙️ Settings")
 
     # API Key Section
-    st.subheader("🔑 API Key")
     if active_key:
         st.markdown(
             """
-            <div class="status-box status-ok">
-                🔒 <b>API Key:</b> <code>Configured & Hidden</code>
+            <div class="status-badge status-ok">
+                <span>🔒</span> <b>API Key Configured & Protected</b>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        if st.button("🔄 Change / Reset API Key"):
-            st.session_state["session_api_key"] = ""
-            save_key_to_env("")
-            st.rerun()
+        with st.expander("🔑 Change API Key"):
+            new_key = st.text_input("New API Key", type="password", key="new_key_input")
+            if st.button("Update Key", use_container_width=True):
+                if new_key.strip():
+                    save_key_to_env(new_key.strip())
+                    st.session_state["session_api_key"] = new_key.strip()
+                    st.success("Key updated!")
+                    st.rerun()
     else:
         st.markdown(
             """
-            <div class="status-box status-warn">
-                ⚠️ <b>GEMINI_API_KEY not configured</b>
+            <div class="status-badge status-warn">
+                <span>⚠️</span> <b>API Key Missing</b>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        show_key = st.checkbox("Show key characters", value=False, key="side_show_key")
-        entered_key = st.text_input(
-            "Paste Gemini API Key",
-            type="default" if show_key else "password",
-            placeholder="AIzaSy...",
-            help="Get your key from https://aistudio.google.com/app/apikey",
-            key="sidebar_key_input",
-        ).strip()
-
-        col_s1, col_s2 = st.columns(2)
-        if col_s1.button("💾 Save to .env", use_container_width=True, disabled=not entered_key):
-            save_key_to_env(entered_key)
-            st.success("Saved to .env!")
-            st.rerun()
-        if col_s2.button("Use for session", use_container_width=True, disabled=not entered_key):
-            st.session_state["session_api_key"] = entered_key
+        entered_key = st.text_input("Enter Gemini API Key", type="password", key="side_key_input")
+        if st.button("Save Key", use_container_width=True, disabled=not entered_key):
+            save_key_to_env(entered_key.strip())
+            st.session_state["session_api_key"] = entered_key.strip()
             st.rerun()
 
-    st.divider()
+    st.markdown("---")
 
     # Model parameters
-    st.subheader("🤖 Model Configuration")
+    st.subheader("🤖 Model")
     model_choice = st.selectbox(
         "Select Model",
         options=[
@@ -144,143 +238,238 @@ with st.sidebar:
             "gemini-3.5-pro",
         ],
         index=0,
-        help="Gemini 3.5 Flash is recommended for fast, high-quality responses.",
+        help="Gemini 3.5 Flash is Google's recommended high-speed multimodal model.",
     )
 
     temperature = st.slider(
-        "Temperature",
+        "Creativity (Temperature)",
         min_value=0.0,
         max_value=2.0,
         value=0.7,
         step=0.05,
-        help="Higher values make output more creative, lower values make it more deterministic.",
+        help="Higher values make responses more diverse and creative.",
     )
 
     enable_history = st.checkbox(
         "Multi-turn Memory",
         value=True,
-        help="When enabled, previous questions and answers in this session are remembered for follow-ups.",
+        help="Maintains context from previous messages in the conversation.",
     )
 
-    system_instruction = st.text_area(
-        "System Instruction (Optional)",
-        placeholder="e.g., You are an expert scientific tutor. Explain concepts clearly with examples.",
-        help="Optional guidance to steer Gemini's tone or persona.",
-    )
+    with st.expander("🎭 Custom Persona / Instructions"):
+        system_instruction = st.text_area(
+            "System Prompt",
+            placeholder="e.g. You are a senior software engineer. Answer questions concisely with production-ready code.",
+            help="Custom instructions to guide Gemini's persona.",
+        )
 
-    st.divider()
+    st.markdown("---")
 
-    # Chat controls
-    if st.button("🗑️ Clear Conversation", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
+    # Action buttons
+    col_clear, col_export = st.columns(2)
+    with col_clear:
+        if st.button("🗑️ Clear", use_container_width=True):
+            st.session_state.messages = []
+            st.session_state.uploader_key += 1
+            st.rerun()
+    with col_export:
+        if st.session_state.messages:
+            full_chat_md = format_chat_for_export(st.session_state.messages)
+            st.download_button(
+                "📥 Export",
+                data=full_chat_md,
+                file_name="gemini_conversation.md",
+                mime="text/markdown",
+                use_container_width=True,
+                help="Export entire conversation as Markdown file",
+            )
+        else:
+            st.button("📥 Export", disabled=True, use_container_width=True)
 
     st.markdown(
         """
-        ---
-        <div style="font-size: 0.8rem; color: #888; text-align: center;">
-            Powered by <b>Google GenAI SDK</b> & <b>Streamlit</b>
+        <div style="font-size: 0.75rem; color: #70757a; text-align: center; margin-top: 1.5rem;">
+            Powered by <b>Gemini API</b> & <b>Streamlit</b>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-# Main app header
-st.markdown('<div class="main-header">✨ Gemini Q&A Assistant</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="sub-header">Ask any question and receive intelligent answers powered by Google\'s Gemini models.</div>',
-    unsafe_allow_html=True,
-)
-
-# Prominent setup screen if API key is missing
+# Alert if API key is not configured
 if not active_key:
-    st.info(
-        """
-        ### 🔑 Enter your Gemini API Key to get started
-
-        You can paste your API key below. You can obtain a free key at [Google AI Studio](https://aistudio.google.com/app/apikey).
-        """
-    )
-
-    col_input, col_show = st.columns([4, 1])
-    with col_show:
-        show_chars = st.checkbox("Show characters", value=True, key="main_show_key")
-    with col_input:
-        direct_key = st.text_input(
-            "Gemini API Key",
-            type="default" if show_chars else "password",
-            placeholder="Paste your API key here (starts with AIzaSy...)",
-            label_visibility="collapsed",
-            key="main_key_input",
-        ).strip()
-
-    col_btn1, col_btn2 = st.columns([1, 1])
-    with col_btn1:
-        if st.button("💾 Save Key to .env (Recommended)", use_container_width=True, type="primary"):
-            if direct_key:
-                save_key_to_env(direct_key)
-                st.session_state["session_api_key"] = direct_key
-                st.success("API Key saved to `.env` successfully! Reloading...")
-                st.rerun()
-            else:
-                st.error("Please paste an API key first.")
-    with col_btn2:
-        if st.button("▶️ Use for this session only", use_container_width=True):
-            if direct_key:
-                st.session_state["session_api_key"] = direct_key
-                st.rerun()
-            else:
-                st.error("Please paste an API key first.")
-
-    st.markdown("---")
+    st.markdown('<div class="hero-title">✨ Welcome to Gemini AI</div>', unsafe_allow_html=True)
     st.markdown(
-        """
-        > **Trouble pasting?**
-        > - Use keyboard shortcut: **`Ctrl + V`** (Windows) or **`Cmd + V`** (Mac).
-        > - Alternatively, open the [`.env`](file:///c:/Users/garvg/OneDrive/Desktop/Equinox/.env) file in your editor or Notepad and paste `GEMINI_API_KEY=your_key` directly.
-        """
+        '<div class="hero-subtitle">To get started, please provide your Google Gemini API key.</div>',
+        unsafe_allow_html=True,
     )
+
+    with st.container():
+        st.info(
+            """
+            **Get your API key in 30 seconds:**
+            1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey) and generate a free API key.
+            2. Paste it in the field below and click **Save & Continue**.
+            """
+        )
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            direct_key = st.text_input(
+                "Gemini API Key",
+                type="password",
+                placeholder="Paste key here (starts with AIzaSy... or AQ...)",
+                label_visibility="collapsed",
+            ).strip()
+        with col2:
+            if st.button("Save & Continue", type="primary", use_container_width=True):
+                if direct_key:
+                    save_key_to_env(direct_key)
+                    st.session_state["session_api_key"] = direct_key
+                    st.success("API key saved!")
+                    st.rerun()
+                else:
+                    st.error("Please enter a key.")
     st.stop()
 
-# Initialize session state for chat messages
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# Example prompt suggestions if conversation is empty
-prompt_to_submit = None
+# Header when chat is empty
 if len(st.session_state.messages) == 0:
-    st.info("💡 **Try asking one of these questions or type your own below:**")
-    col1, col2, col3 = st.columns(3)
-    example_prompts = [
-        "Explain quantum computing in simple terms for a beginner.",
-        "Write a Python script to find all duplicate files in a folder.",
-        "What are the key architectural differences between REST and GraphQL?",
-    ]
-    if col1.button("⚛️ Quantum Computing", use_container_width=True):
-        prompt_to_submit = example_prompts[0]
-    if col2.button("🐍 Python Duplicates", use_container_width=True):
-        prompt_to_submit = example_prompts[1]
-    if col3.button("🌐 REST vs GraphQL", use_container_width=True):
-        prompt_to_submit = example_prompts[2]
+    st.markdown('<div class="hero-title">✨ How can I help you today?</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="hero-subtitle">Ask questions, analyze documents, inspect code, or brainstorm ideas.</div>',
+        unsafe_allow_html=True,
+    )
+
+    # Prompt Suggestion Cards
+    c1, c2 = st.columns(2)
+    suggested_prompt = None
+
+    with c1:
+        if st.button("⚛️  Explain Quantum Computing\n\nBreak it down for a beginner with simple analogies.", use_container_width=True):
+            suggested_prompt = "Explain quantum computing in simple terms for a beginner, with clear everyday analogies."
+        st.write("")
+        if st.button("🐍  Write & Optimize Code\n\nCreate a Python script to find all duplicate files in a folder.", use_container_width=True):
+            suggested_prompt = "Write a fast, clean Python script to find duplicate files in a directory using hashing."
+
+    with c2:
+        if st.button("🌐  Architectural Comparison\n\nCompare REST vs GraphQL vs gRPC: trade-offs & use cases.", use_container_width=True):
+            suggested_prompt = "Compare REST, GraphQL, and gRPC with key differences, strengths, and when to use each."
+        st.write("")
+        if st.button("📄  Analyze Uploaded Files\n\nUpload a PDF, image, or dataset to get instant insights.", use_container_width=True):
+            suggested_prompt = "I have attached a file. Please summarize its key contents, structure, and highlight important takeaways."
+else:
+    suggested_prompt = None
 
 # Render existing messages
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
+for idx, msg in enumerate(st.session_state.messages):
+    avatar = "👤" if msg["role"] == "user" else "✨"
+    with st.chat_message(msg["role"], avatar=avatar):
+        # Display attached file badges if any
+        if "files" in msg and msg["files"]:
+            for f in msg["files"]:
+                st.markdown(
+                    f'<div class="file-attachment-badge">📎 <b>{f["name"]}</b> ({f.get("size_str", "Attached")})</div>',
+                    unsafe_allow_html=True,
+                )
+                if f.get("is_image", False) and "data_b64" in f:
+                    st.image(base64.b64decode(f["data_b64"]), width=300)
+
+        # Message text content
         st.markdown(msg["content"])
 
-# Handle user input (from chat input or quick prompt buttons)
-user_query = st.chat_input("Ask a question...")
-if prompt_to_submit:
-    user_query = prompt_to_submit
+        # Assistant Actions: Copy & Export
+        if msg["role"] == "assistant":
+            col_act1, col_act2, _ = st.columns([1.2, 1.4, 6])
+            with col_act1:
+                st.download_button(
+                    "📥 Export",
+                    data=msg["content"],
+                    file_name=f"gemini_answer_{idx}.md",
+                    mime="text/markdown",
+                    key=f"dl_{idx}",
+                    help="Download this response as a Markdown file",
+                )
+            with col_act2:
+                with st.popover("📋 Copy Text"):
+                    st.caption("Select and copy response:")
+                    st.code(msg["content"], language="markdown")
 
+# File attachment expander right above the input bar
+with st.expander("📎 **Attach Files (Images, PDF, Code, Documents)**", expanded=False):
+    uploaded_files = st.file_uploader(
+        "Upload files for Gemini to analyze",
+        type=["png", "jpg", "jpeg", "webp", "pdf", "txt", "py", "csv", "md", "json", "html", "js"],
+        accept_multiple_files=True,
+        key=f"file_uploader_{st.session_state.uploader_key}",
+        help="Upload images (PNG, JPG), PDF documents, data (CSV, JSON), or code files.",
+    )
+    if uploaded_files:
+        st.caption(f"✅ {len(uploaded_files)} file(s) attached and ready to send with your question.")
+
+# Chat input
+user_query = st.chat_input("Ask a question, or attach files above...")
+if suggested_prompt:
+    user_query = suggested_prompt
+
+# Process user submission
 if user_query:
-    # Append and display user question
-    st.session_state.messages.append({"role": "user", "content": user_query})
-    with st.chat_message("user"):
+    # Prepare attached files metadata and Gemini parts
+    attached_files_meta = []
+    gemini_file_parts = []
+
+    if uploaded_files:
+        for uf in uploaded_files:
+            file_bytes = uf.getvalue()
+            mime = uf.type or "application/octet-stream"
+            size_kb = len(file_bytes) / 1024
+            size_str = f"{size_kb:.1f} KB" if size_kb < 1024 else f"{size_kb/1024:.1f} MB"
+            is_img = mime.startswith("image/")
+
+            meta = {
+                "name": uf.name,
+                "mime": mime,
+                "size_str": size_str,
+                "is_image": is_img,
+            }
+            if is_img:
+                meta["data_b64"] = base64.b64encode(file_bytes).decode("utf-8")
+
+            attached_files_meta.append(meta)
+
+            # Build Gemini part
+            if is_img or mime == "application/pdf":
+                gemini_file_parts.append(
+                    types.Part.from_bytes(data=file_bytes, mime_type=mime)
+                )
+            else:
+                # Text/code/csv files
+                text_content = file_bytes.decode("utf-8", errors="ignore")
+                gemini_file_parts.append(
+                    types.Part.from_text(text=f"--- Attached File: {uf.name} ---\n{text_content}\n")
+                )
+
+        # Increment uploader key so input clears after send
+        st.session_state.uploader_key += 1
+
+    # Append user question to session state
+    st.session_state.messages.append({
+        "role": "user",
+        "content": user_query,
+        "files": attached_files_meta,
+    })
+
+    # Render user message
+    with st.chat_message("user", avatar="👤"):
+        if attached_files_meta:
+            for f in attached_files_meta:
+                st.markdown(
+                    f'<div class="file-attachment-badge">📎 <b>{f["name"]}</b> ({f["size_str"]})</div>',
+                    unsafe_allow_html=True,
+                )
+                if f.get("is_image", False) and "data_b64" in f:
+                    st.image(base64.b64decode(f["data_b64"]), width=300)
         st.markdown(user_query)
 
-    # Generate answer with Gemini
-    with st.chat_message("assistant"):
+    # Generate assistant answer
+    with st.chat_message("assistant", avatar="✨"):
         response_placeholder = st.empty()
         full_response = ""
 
@@ -289,14 +478,14 @@ if user_query:
 
             # Build generation config
             config_args = {"temperature": temperature}
-            if system_instruction.strip():
+            if "system_instruction" in locals() and system_instruction.strip():
                 config_args["system_instruction"] = system_instruction.strip()
             config = types.GenerateContentConfig(**config_args)
 
-            # Build contents (multi-turn history or single turn)
-            if enable_history:
+            # Build contents
+            if enable_history and len(st.session_state.messages) > 1:
                 contents = []
-                for msg in st.session_state.messages:
+                for msg in st.session_state.messages[:-1]:
                     role = "user" if msg["role"] == "user" else "model"
                     contents.append(
                         types.Content(
@@ -304,24 +493,32 @@ if user_query:
                             parts=[types.Part.from_text(text=msg["content"])],
                         )
                     )
+                # Current user message with any attached files
+                current_parts = gemini_file_parts + [types.Part.from_text(text=user_query)]
+                contents.append(types.Content(role="user", parts=current_parts))
             else:
-                contents = user_query
+                current_parts = gemini_file_parts + [types.Part.from_text(text=user_query)]
+                contents = current_parts
 
-            # Call Gemini generate_content_stream
+            # Call Gemini streaming API
             stream = client.models.generate_content_stream(
                 model=model_choice,
                 contents=contents,
                 config=config,
             )
 
-            # Stream chunks as they arrive
+            # Stream chunks
             for chunk in stream:
                 if chunk.text:
                     full_response += chunk.text
                     response_placeholder.markdown(full_response + "▌")
 
             response_placeholder.markdown(full_response)
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": full_response,
+            })
+            st.rerun()
 
         except APIError as e:
             error_message = getattr(e, "message", str(e))
