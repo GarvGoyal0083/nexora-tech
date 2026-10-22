@@ -19,7 +19,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom modern CSS for ChatGPT / Gemini aesthetic
+# Custom modern CSS for ChatGPT / Claude / Gemini aesthetic
 st.markdown(
     """
     <style>
@@ -30,7 +30,7 @@ st.markdown(
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* Main container max-width for chat experience */
+    /* Main container max-width for modern chat experience */
     .block-container {
         max-width: 860px;
         padding-top: 2rem;
@@ -77,32 +77,6 @@ st.markdown(
         border: 1px solid rgba(251, 188, 4, 0.3);
     }
 
-    /* Prompt cards */
-    .prompt-card {
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        padding: 16px 18px;
-        transition: all 0.2s ease-in-out;
-        cursor: pointer;
-        height: 100%;
-    }
-    .prompt-card:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.2);
-        transform: translateY(-2px);
-    }
-    .prompt-title {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: #e8eaed;
-        margin-bottom: 4px;
-    }
-    .prompt-desc {
-        font-size: 0.82rem;
-        color: #9aa0a6;
-    }
-
     /* Message bubbles */
     .stChatMessage {
         border-radius: 16px;
@@ -124,14 +98,9 @@ st.markdown(
         margin-bottom: 8px;
     }
 
-    /* Assistant response actions toolbar */
-    .response-actions {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        margin-top: 8px;
-        padding-top: 8px;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
+    /* Style the chat input bar for ChatGPT/Claude look */
+    div[data-testid="stChatInput"] {
+        border-radius: 24px;
     }
     </style>
     """,
@@ -185,8 +154,6 @@ active_key = get_configured_api_key()
 # Initialize session state variables
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "uploader_key" not in st.session_state:
-    st.session_state.uploader_key = 0
 
 # Sidebar configuration
 with st.sidebar:
@@ -270,7 +237,6 @@ with st.sidebar:
     with col_clear:
         if st.button("🗑️ Clear", use_container_width=True):
             st.session_state.messages = []
-            st.session_state.uploader_key += 1
             st.rerun()
     with col_export:
         if st.session_state.messages:
@@ -334,7 +300,7 @@ if not active_key:
 if len(st.session_state.messages) == 0:
     st.markdown('<div class="hero-title">✨ How can I help you today?</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="hero-subtitle">Ask questions, analyze documents, inspect code, or brainstorm ideas.</div>',
+        '<div class="hero-subtitle">Ask questions, analyze images & documents, inspect code, or brainstorm ideas.</div>',
         unsafe_allow_html=True,
     )
 
@@ -353,8 +319,8 @@ if len(st.session_state.messages) == 0:
         if st.button("🌐  Architectural Comparison\n\nCompare REST vs GraphQL vs gRPC: trade-offs & use cases.", use_container_width=True):
             suggested_prompt = "Compare REST, GraphQL, and gRPC with key differences, strengths, and when to use each."
         st.write("")
-        if st.button("📄  Analyze Uploaded Files\n\nUpload a PDF, image, or dataset to get instant insights.", use_container_width=True):
-            suggested_prompt = "I have attached a file. Please summarize its key contents, structure, and highlight important takeaways."
+        if st.button("📄  Document & Image Analysis\n\nAttach a file using the + icon below to get instant insights.", use_container_width=True):
+            suggested_prompt = "Please explain the multimodal capabilities of Gemini, including what types of files and images you can analyze."
 else:
     suggested_prompt = None
 
@@ -392,62 +358,66 @@ for idx, msg in enumerate(st.session_state.messages):
                     st.caption("Select and copy response:")
                     st.code(msg["content"], language="markdown")
 
-# File attachment expander right above the input bar
-with st.expander("📎 **Attach Files (Images, PDF, Code, Documents)**", expanded=False):
-    uploaded_files = st.file_uploader(
-        "Upload files for Gemini to analyze",
-        type=["png", "jpg", "jpeg", "webp", "pdf", "txt", "py", "csv", "md", "json", "html", "js"],
-        accept_multiple_files=True,
-        key=f"file_uploader_{st.session_state.uploader_key}",
-        help="Upload images (PNG, JPG), PDF documents, data (CSV, JSON), or code files.",
-    )
-    if uploaded_files:
-        st.caption(f"✅ {len(uploaded_files)} file(s) attached and ready to send with your question.")
+# Modern ChatGPT / Claude style chat input with inline file attachment button (+)
+submission = st.chat_input(
+    "Ask a question or attach files (Images, PDFs, Code, Docs)...",
+    accept_file="multiple",
+    file_type=["png", "jpg", "jpeg", "webp", "pdf", "txt", "py", "csv", "md", "json", "html", "js"],
+)
 
-# Chat input
-user_query = st.chat_input("Ask a question, or attach files above...")
+# Determine user query and submitted files
+user_query = ""
+submitted_files = []
+
 if suggested_prompt:
     user_query = suggested_prompt
+elif submission:
+    if hasattr(submission, "text"):
+        user_query = submission.text.strip()
+        if hasattr(submission, "files") and submission.files:
+            submitted_files = submission.files
+    else:
+        user_query = str(submission).strip()
+
+    # If user attached files without typing text, default to an analysis prompt
+    if not user_query and submitted_files:
+        user_query = "Please analyze the attached file(s) and provide a comprehensive summary and key insights."
 
 # Process user submission
-if user_query:
+if user_query or submitted_files:
     # Prepare attached files metadata and Gemini parts
     attached_files_meta = []
     gemini_file_parts = []
 
-    if uploaded_files:
-        for uf in uploaded_files:
-            file_bytes = uf.getvalue()
-            mime = uf.type or "application/octet-stream"
-            size_kb = len(file_bytes) / 1024
-            size_str = f"{size_kb:.1f} KB" if size_kb < 1024 else f"{size_kb/1024:.1f} MB"
-            is_img = mime.startswith("image/")
+    for uf in submitted_files:
+        file_bytes = uf.getvalue()
+        mime = uf.type or "application/octet-stream"
+        size_kb = len(file_bytes) / 1024
+        size_str = f"{size_kb:.1f} KB" if size_kb < 1024 else f"{size_kb/1024:.1f} MB"
+        is_img = mime.startswith("image/")
 
-            meta = {
-                "name": uf.name,
-                "mime": mime,
-                "size_str": size_str,
-                "is_image": is_img,
-            }
-            if is_img:
-                meta["data_b64"] = base64.b64encode(file_bytes).decode("utf-8")
+        meta = {
+            "name": uf.name,
+            "mime": mime,
+            "size_str": size_str,
+            "is_image": is_img,
+        }
+        if is_img:
+            meta["data_b64"] = base64.b64encode(file_bytes).decode("utf-8")
 
-            attached_files_meta.append(meta)
+        attached_files_meta.append(meta)
 
-            # Build Gemini part
-            if is_img or mime == "application/pdf":
-                gemini_file_parts.append(
-                    types.Part.from_bytes(data=file_bytes, mime_type=mime)
-                )
-            else:
-                # Text/code/csv files
-                text_content = file_bytes.decode("utf-8", errors="ignore")
-                gemini_file_parts.append(
-                    types.Part.from_text(text=f"--- Attached File: {uf.name} ---\n{text_content}\n")
-                )
-
-        # Increment uploader key so input clears after send
-        st.session_state.uploader_key += 1
+        # Build Gemini part
+        if is_img or mime == "application/pdf":
+            gemini_file_parts.append(
+                types.Part.from_bytes(data=file_bytes, mime_type=mime)
+            )
+        else:
+            # Text/code/csv/json files
+            text_content = file_bytes.decode("utf-8", errors="ignore")
+            gemini_file_parts.append(
+                types.Part.from_text(text=f"--- Attached File: {uf.name} ---\n{text_content}\n")
+            )
 
     # Append user question to session state
     st.session_state.messages.append({
