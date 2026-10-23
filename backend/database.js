@@ -271,16 +271,16 @@ function seedDataIfEmpty() {
       'Credit Card (Visa ending in 4242)',
       'Paid',
       'Delivered',
-      3299.99,
+      274999,
       0,
-      100,
-      263.99,
-      3463.98,
+      5000,
+      21600,
+      291599,
       JSON.stringify([
         {
           id: 2,
           title: 'Apple MacBook Pro 16" M3 Max',
-          price: 3299.99,
+          price: 274999,
           quantity: 1,
           condition: 'Certified Refurbished - Grade A+',
           image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80'
@@ -307,16 +307,16 @@ function seedDataIfEmpty() {
       'PayPal',
       'Paid',
       'Shipped',
-      519.98,
-      25,
+      45498,
+      1499,
       0,
-      41.59,
-      586.57,
+      3640,
+      50637,
       JSON.stringify([
         {
           id: 10,
           title: 'AMD Ryzen 7 7800X3D Desktop Processor',
-          price: 389.99,
+          price: 32999,
           quantity: 1,
           condition: 'New',
           image: 'https://images.unsplash.com/photo-1555680202-c86f0e12f086?auto=format&fit=crop&w=1200&q=80'
@@ -324,7 +324,7 @@ function seedDataIfEmpty() {
         {
           id: 15,
           title: 'Razer DeathAdder V3 Pro Wireless Gaming Mouse',
-          price: 149.99,
+          price: 12499,
           quantity: 1,
           condition: 'New',
           image: 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?auto=format&fit=crop&w=1200&q=80'
@@ -351,16 +351,16 @@ function seedDataIfEmpty() {
       'UPI / Digital Scan',
       'Paid',
       'Processing',
-      1399.99,
+      119999,
       0,
-      50,
-      111.99,
-      1461.98,
+      2500,
+      9400,
+      126899,
       JSON.stringify([
         {
           id: 6,
           title: 'Samsung Odyssey OLED G9 49" Curved',
-          price: 1399.99,
+          price: 119999,
           quantity: 1,
           condition: 'New',
           image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=1200&q=80'

@@ -272,7 +272,7 @@ export default function Account() {
 
                     <div className="text-right sm:self-auto">
                       <span className="text-base font-black text-cyan-400">
-                        ${o.total.toFixed(2)}
+                        ₹{Number(o.total).toLocaleString('en-IN')}
                       </span>
                       <Link
                         to={`/order-confirmation/${o.order_number}`}
@@ -302,7 +302,7 @@ export default function Account() {
                           </div>
                         </div>
                         <span className="font-bold text-slate-200">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          ₹{Number(item.price * item.quantity).toLocaleString('en-IN')}
                         </span>
                       </div>
                     ))}
@@ -343,7 +343,7 @@ export default function Account() {
                     <div>
                       <span className="text-[10px] text-cyan-400 font-bold uppercase">{item.brand}</span>
                       <h4 className="text-xs font-bold text-white line-clamp-2">{item.title}</h4>
-                      <p className="text-base font-black text-cyan-400 mt-1">${item.price.toFixed(2)}</p>
+                      <p className="text-base font-black text-cyan-400 mt-1">₹{Number(item.price).toLocaleString('en-IN')}</p>
                     </div>
                   </div>
 

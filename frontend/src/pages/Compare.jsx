@@ -144,11 +144,11 @@ export default function Compare() {
 
                       <div className="flex items-baseline gap-2">
                         <span className="text-lg font-black text-cyan-400">
-                          ${item.price.toFixed(2)}
+                          ₹{Number(item.price).toLocaleString('en-IN')}
                         </span>
                         {item.original_price > item.price && (
                           <span className="text-xs text-slate-500 line-through">
-                            ${item.original_price.toFixed(2)}
+                            ₹{Number(item.original_price).toLocaleString('en-IN')}
                           </span>
                         )}
                       </div>
@@ -280,7 +280,7 @@ export default function Compare() {
                       <div className="min-w-0">
                         <span className="text-[10px] text-cyan-400 font-bold">{product.brand}</span>
                         <h4 className="text-xs font-bold text-white truncate">{product.title}</h4>
-                        <span className="text-xs font-black text-cyan-400">${product.price.toFixed(2)}</span>
+                        <span className="text-xs font-black text-cyan-400">₹{Number(product.price).toLocaleString('en-IN')}</span>
                       </div>
                     </div>
 

@@ -58,11 +58,11 @@ export default function OrderConfirmation() {
     status: 'Processing',
     shipping_method: 'Express Insured (2-3 Business Days)',
     payment_method: 'Credit Card (Visa ending in 4242)',
-    subtotal: 3299.99,
+    subtotal: 274999,
     shipping_fee: 0,
-    discount: 100,
-    tax: 263.99,
-    total: 3463.98,
+    discount: 5000,
+    tax: 48600,
+    total: 318599,
     shipping_address: {
       street: '742 Evergreen Terrace',
       city: 'Austin',
@@ -74,7 +74,7 @@ export default function OrderConfirmation() {
       {
         id: 2,
         title: 'Apple MacBook Pro 16" M3 Max',
-        price: 3299.99,
+        price: 274999,
         quantity: 1,
         condition: 'Certified Refurbished - Grade A+',
         image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80'
@@ -251,9 +251,9 @@ export default function OrderConfirmation() {
                     </span>
                   </td>
                   <td className="p-3 text-center text-slate-300">{item.quantity}</td>
-                  <td className="p-3 text-right text-slate-300">${item.price.toFixed(2)}</td>
+                  <td className="p-3 text-right text-slate-300">₹{Number(item.price).toLocaleString('en-IN')}</td>
                   <td className="p-3 text-right font-bold text-cyan-400">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    ₹{Number(item.price * item.quantity).toLocaleString('en-IN')}
                   </td>
                 </tr>
               ))}
@@ -266,28 +266,28 @@ export default function OrderConfirmation() {
           <div className="w-72 space-y-2">
             <div className="flex justify-between text-slate-400">
               <span>Subtotal:</span>
-              <span className="text-white">${displayOrder.subtotal?.toFixed(2)}</span>
+              <span className="text-white">₹{Number(displayOrder.subtotal || 0).toLocaleString('en-IN')}</span>
             </div>
             {displayOrder.discount > 0 && (
               <div className="flex justify-between text-emerald-400">
                 <span>Promotional Discount:</span>
-                <span>-${displayOrder.discount?.toFixed(2)}</span>
+                <span>-₹{Number(displayOrder.discount || 0).toLocaleString('en-IN')}</span>
               </div>
             )}
             <div className="flex justify-between text-slate-400">
               <span>Freight Delivery:</span>
               <span className="text-white">
-                {displayOrder.shipping_fee === 0 ? 'FREE' : `$${displayOrder.shipping_fee?.toFixed(2)}`}
+                {displayOrder.shipping_fee === 0 ? 'FREE' : `₹${Number(displayOrder.shipping_fee || 0).toLocaleString('en-IN')}`}
               </span>
             </div>
             <div className="flex justify-between text-slate-400">
-              <span>Sales Tax (8%):</span>
-              <span className="text-white">${displayOrder.tax?.toFixed(2)}</span>
+              <span>Tax / GST:</span>
+              <span className="text-white">₹{Number(displayOrder.tax || 0).toLocaleString('en-IN')}</span>
             </div>
             <div className="pt-2 border-t border-slate-800 flex justify-between items-baseline font-bold">
               <span className="text-sm text-white">Total Amount Paid:</span>
               <span className="text-xl font-black text-cyan-400">
-                ${displayOrder.total?.toFixed(2)}
+                ₹{Number(displayOrder.total || 0).toLocaleString('en-IN')}
               </span>
             </div>
           </div>

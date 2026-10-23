@@ -57,10 +57,10 @@ export default function Deals() {
   };
 
   const promoCodes = [
-    { code: 'NEXORA10', discount: '10% OFF Any Order', min: '$100 min order', badge: 'VIP WELCOME' },
-    { code: 'CYBER50', discount: '$50 Instant Credit', min: '$300 min order', badge: 'GAMING FLASH' },
-    { code: 'GAMER100', discount: '$100 Mega Discount', min: '$800 min order', badge: 'PRO RIGS' },
-    { code: 'REFURB15', discount: '15% Off Refurbished', min: '$250 min order', badge: 'ECO SPECIAL' }
+    { code: 'NEXORA10', discount: '10% OFF Any Order', min: '₹5,000 min order', badge: 'VIP WELCOME' },
+    { code: 'CYBER50', discount: '₹2,500 Instant Credit', min: '₹20,000 min order', badge: 'GAMING FLASH' },
+    { code: 'GAMER100', discount: '₹5,000 Mega Discount', min: '₹50,000 min order', badge: 'PRO RIGS' },
+    { code: 'REFURB15', discount: '15% Off Refurbished', min: '₹15,000 min order', badge: 'ECO SPECIAL' }
   ];
 
   return (

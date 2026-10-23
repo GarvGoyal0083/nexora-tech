@@ -117,15 +117,15 @@ export default function QuickViewModal({ product, onClose }) {
             {/* Pricing */}
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-black text-cyan-400">
-                ${product.price.toFixed(2)}
+                ₹{Number(product.price).toLocaleString('en-IN')}
               </span>
               {product.original_price > product.price && (
                 <>
                   <span className="text-base text-slate-500 line-through">
-                    ${product.original_price.toFixed(2)}
+                    ₹{Number(product.original_price).toLocaleString('en-IN')}
                   </span>
                   <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-300">
-                    Save ${(product.original_price - product.price).toFixed(2)} ({product.discount_pct}%)
+                    Save ₹{Number(product.original_price - product.price).toLocaleString('en-IN')} ({product.discount_pct}%)
                   </span>
                 </>
               )}

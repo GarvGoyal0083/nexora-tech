@@ -559,7 +559,7 @@ export default function Checkout() {
                         </div>
                       </div>
                       <span className="font-black text-cyan-400">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        ₹{Number(item.price * item.quantity).toLocaleString('en-IN')}
                       </span>
                     </div>
                   ))}
@@ -582,7 +582,7 @@ export default function Checkout() {
                   className="px-8 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-black text-sm flex items-center gap-2 shadow-neon-cyan transition-all transform hover:-translate-y-0.5 disabled:opacity-50"
                 >
                   <Lock className="w-4 h-4" />
-                  <span>{submitting ? 'Authorizing & Creating Order...' : `Authorize & Pay $${total.toFixed(2)}`}</span>
+                  <span>{submitting ? 'Authorizing & Creating Order...' : `Authorize & Pay ₹${Number(total).toLocaleString('en-IN')}`}</span>
                 </button>
               </div>
             </div>
@@ -599,32 +599,32 @@ export default function Checkout() {
             <div className="space-y-2 text-xs">
               <div className="flex justify-between text-slate-400">
                 <span>Subtotal ({cart.length} items)</span>
-                <span className="text-white font-medium">${subtotal.toFixed(2)}</span>
+                <span className="text-white font-medium">₹{Number(subtotal).toLocaleString('en-IN')}</span>
               </div>
 
               {discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-400 font-semibold">
                   <span>Promotional Savings</span>
-                  <span>-${discountAmount.toFixed(2)}</span>
+                  <span>-₹{Number(discountAmount).toLocaleString('en-IN')}</span>
                 </div>
               )}
 
               <div className="flex justify-between text-slate-400">
                 <span>Tech Freight Delivery</span>
                 <span className="text-white font-medium">
-                  {shippingFee === 0 ? 'FREE' : `$${shippingFee.toFixed(2)}`}
+                  {shippingFee === 0 ? 'FREE' : `₹${Number(shippingFee).toLocaleString('en-IN')}`}
                 </span>
               </div>
 
               <div className="flex justify-between text-slate-400">
-                <span>Estimated Sales Tax (8%)</span>
-                <span className="text-white font-medium">${tax.toFixed(2)}</span>
+                <span>Estimated GST (18%)</span>
+                <span className="text-white font-medium">₹{Number(tax).toLocaleString('en-IN')}</span>
               </div>
 
               <div className="pt-3 border-t border-slate-800 flex justify-between items-baseline">
                 <span className="text-sm font-bold text-white">Grand Total</span>
                 <span className="text-2xl font-black text-cyan-400">
-                  ${total.toFixed(2)}
+                  ₹{Number(total).toLocaleString('en-IN')}
                 </span>
               </div>
             </div>

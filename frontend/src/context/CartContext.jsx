@@ -9,7 +9,13 @@ export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem('nexora_cart');
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : [];
+      // Clear legacy USD cart items if any item has legacy USD pricing (< 5000)
+      if (Array.isArray(parsed) && parsed.some(item => item.price < 5000)) {
+        localStorage.removeItem('nexora_cart');
+        return [];
+      }
+      return parsed;
     } catch (e) {
       return [];
     }
@@ -97,27 +103,27 @@ export const CartProvider = ({ children }) => {
   const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Shipping calculation
+  // Shipping calculation (INR)
   const shippingFee = shippingMethod === 'overnight'
-    ? 29.99
+    ? 1499
     : shippingMethod === 'express'
-    ? 14.99
-    : subtotal >= 150 || subtotal === 0
+    ? 799
+    : subtotal >= 10000 || subtotal === 0
     ? 0
-    : 9.99;
+    : 499;
 
   // Discount calculation
   let discountAmount = 0;
   if (appliedCoupon && subtotal > 0) {
     if (appliedCoupon.discount_type === 'pct') {
-      discountAmount = (subtotal * appliedCoupon.value) / 100;
+      discountAmount = Math.round((subtotal * appliedCoupon.value) / 100);
     } else {
       discountAmount = Math.min(appliedCoupon.value, subtotal);
     }
   }
 
-  const tax = Number(((subtotal - discountAmount) * 0.08).toFixed(2));
-  const total = Math.max(0, Number((subtotal - discountAmount + shippingFee + tax).toFixed(2)));
+  const tax = Math.round((subtotal - discountAmount) * 0.18);
+  const total = Math.max(0, Math.round(subtotal - discountAmount + shippingFee + tax));
 
   const applyCoupon = async (code) => {
     try {
@@ -158,7 +164,7 @@ export const CartProvider = ({ children }) => {
         removeCoupon,
         tax,
         total,
-        freeShippingThreshold: 150
+        freeShippingThreshold: 10000
       }}
     >
       {children}

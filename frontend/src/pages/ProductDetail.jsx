@@ -228,7 +228,7 @@ export default function ProductDetail() {
               <Truck className="w-5 h-5 text-cyan-400 shrink-0" />
               <div className="text-xs">
                 <span className="font-bold text-white block">Insured Courier</span>
-                <span className="text-slate-400 text-[11px]">Free tech shipping over $150</span>
+                <span className="text-slate-400 text-[11px]">Free tech shipping over ₹10,000</span>
               </div>
             </div>
 
@@ -275,18 +275,18 @@ export default function ProductDetail() {
             <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 flex flex-wrap items-baseline gap-4">
               <div>
                 <span className="text-3xl sm:text-4xl font-black text-cyan-400">
-                  ${product.price.toFixed(2)}
+                  ₹{Number(product.price).toLocaleString('en-IN')}
                 </span>
                 {product.original_price > product.price && (
                   <span className="text-base text-slate-500 line-through ml-3">
-                    ${product.original_price.toFixed(2)}
+                    ₹{Number(product.original_price).toLocaleString('en-IN')}
                   </span>
                 )}
               </div>
 
               {product.original_price > product.price && (
                 <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  Save ${(product.original_price - product.price).toFixed(2)} ({product.discount_pct}% OFF)
+                  Save ₹{Number(product.original_price - product.price).toLocaleString('en-IN')} ({product.discount_pct}% OFF)
                 </span>
               )}
             </div>

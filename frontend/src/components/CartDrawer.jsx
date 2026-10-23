@@ -66,7 +66,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                 <span>
                   {remainingForFreeShipping === 0
                     ? 'UNLOCKED'
-                    : `Add $${remainingForFreeShipping.toFixed(2)} more`}
+                    : `Add ₹${remainingForFreeShipping.toLocaleString('en-IN')} more`}
                 </span>
               </div>
               <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
@@ -121,7 +121,7 @@ export default function CartDrawer({ isOpen, onClose }) {
 
                     <h4 className="text-xs font-bold text-white truncate">{item.title}</h4>
                     <p className="text-xs font-extrabold text-cyan-400 mt-0.5">
-                      ${item.price.toFixed(2)}
+                      ₹{Number(item.price).toLocaleString('en-IN')}
                     </p>
 
                     {/* Quantity controls */}
@@ -164,7 +164,7 @@ export default function CartDrawer({ isOpen, onClose }) {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-400">Subtotal:</span>
                 <span className="text-lg font-black text-cyan-400">
-                  ${subtotal.toFixed(2)}
+                  ₹{Number(subtotal).toLocaleString('en-IN')}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 flex items-center gap-1">

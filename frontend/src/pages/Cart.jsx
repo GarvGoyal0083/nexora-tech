@@ -112,7 +112,7 @@ export default function Cart() {
           <span className="text-cyan-300">
             {remainingForFreeShipping === 0
               ? 'Free Shipping Unlocked!'
-              : `Add $${remainingForFreeShipping.toFixed(2)} more for Free Priority Shipping`}
+              : `Add ₹${remainingForFreeShipping.toLocaleString('en-IN')} more for Free Priority Shipping`}
           </span>
         </div>
         <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
@@ -161,7 +161,7 @@ export default function Cart() {
                     </Link>
 
                     <p className="text-xs font-black text-cyan-400">
-                      ${item.price.toFixed(2)} each
+                      ₹{Number(item.price).toLocaleString('en-IN')} each
                     </p>
                   </div>
                 </div>
@@ -188,7 +188,7 @@ export default function Cart() {
 
                   <div className="text-right min-w-[90px]">
                     <span className="text-base font-black text-white">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      ₹{Number(item.price * item.quantity).toLocaleString('en-IN')}
                     </span>
                   </div>
 
@@ -232,7 +232,7 @@ export default function Cart() {
                   <div>
                     <span className="font-bold text-emerald-300 block">{appliedCoupon.code}</span>
                     <span className="text-slate-400 text-[11px]">
-                      {appliedCoupon.discount_type === 'pct' ? `${appliedCoupon.value}% discount applied` : `$${appliedCoupon.value} discount applied`}
+                      {appliedCoupon.discount_type === 'pct' ? `${appliedCoupon.value}% discount applied` : `₹${Number(appliedCoupon.value).toLocaleString('en-IN')} discount applied`}
                     </span>
                   </div>
                   <button
@@ -303,7 +303,7 @@ export default function Cart() {
                     </div>
                   </div>
                   <span className="font-bold text-cyan-400">
-                    {subtotal >= freeShippingThreshold ? 'FREE' : '$9.99'}
+                    {subtotal >= freeShippingThreshold ? 'FREE' : '₹499'}
                   </span>
                 </label>
 
@@ -321,7 +321,7 @@ export default function Cart() {
                       <span className="text-[11px] text-slate-500">2-3 Business Days</span>
                     </div>
                   </div>
-                  <span className="font-bold text-slate-200">$14.99</span>
+                  <span className="font-bold text-slate-200">₹799</span>
                 </label>
 
                 <label className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900/70 border border-slate-800 cursor-pointer hover:border-slate-700">
@@ -338,7 +338,7 @@ export default function Cart() {
                       <span className="text-[11px] text-slate-500">Next Business Day AM</span>
                     </div>
                   </div>
-                  <span className="font-bold text-slate-200">$29.99</span>
+                  <span className="font-bold text-slate-200">₹1,499</span>
                 </label>
               </div>
             </div>
@@ -347,32 +347,32 @@ export default function Cart() {
             <div className="space-y-2 pt-3 border-t border-slate-800 text-xs">
               <div className="flex justify-between text-slate-400">
                 <span>Subtotal</span>
-                <span className="text-white font-medium">${subtotal.toFixed(2)}</span>
+                <span className="text-white font-medium">₹{Number(subtotal).toLocaleString('en-IN')}</span>
               </div>
 
               {discountAmount > 0 && (
                 <div className="flex justify-between text-emerald-400 font-semibold">
                   <span>Coupon Discount</span>
-                  <span>-${discountAmount.toFixed(2)}</span>
+                  <span>-₹{Number(discountAmount).toLocaleString('en-IN')}</span>
                 </div>
               )}
 
               <div className="flex justify-between text-slate-400">
                 <span>Estimated Shipping</span>
                 <span className="text-white font-medium">
-                  {shippingFee === 0 ? 'FREE' : `$${shippingFee.toFixed(2)}`}
+                  {shippingFee === 0 ? 'FREE' : `₹${Number(shippingFee).toLocaleString('en-IN')}`}
                 </span>
               </div>
 
               <div className="flex justify-between text-slate-400">
-                <span>Estimated State Tax (8%)</span>
-                <span className="text-white font-medium">${tax.toFixed(2)}</span>
+                <span>Estimated GST (18%)</span>
+                <span className="text-white font-medium">₹{Number(tax).toLocaleString('en-IN')}</span>
               </div>
 
               <div className="pt-3 border-t border-slate-800 flex justify-between items-baseline">
                 <span className="text-sm font-bold text-white">Estimated Total</span>
                 <span className="text-2xl font-black text-cyan-400">
-                  ${total.toFixed(2)}
+                  ₹{Number(total).toLocaleString('en-IN')}
                 </span>
               </div>
             </div>

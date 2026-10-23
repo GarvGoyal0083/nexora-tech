@@ -183,11 +183,11 @@ export default function ProductCard({ product, onQuickView }) {
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg font-black text-cyan-400">
-                ${product.price.toFixed(2)}
+                ₹{Number(product.price).toLocaleString('en-IN')}
               </span>
               {product.original_price > product.price && (
                 <span className="text-xs text-slate-500 line-through">
-                  ${product.original_price.toFixed(2)}
+                  ₹{Number(product.original_price).toLocaleString('en-IN')}
                 </span>
               )}
             </div>

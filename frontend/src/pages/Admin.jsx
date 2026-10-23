@@ -273,7 +273,7 @@ export default function Admin() {
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-black text-cyan-400">
-            ${stats?.total_revenue?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}
+            ₹{Number(stats?.total_revenue || 0).toLocaleString('en-IN')}
           </div>
           <p className="text-[11px] text-slate-500">From {stats?.total_orders || 0} customer orders</p>
         </div>
@@ -433,7 +433,7 @@ export default function Admin() {
                     </td>
 
                     <td className="p-3.5 font-bold text-cyan-400 text-sm">
-                      ${p.price.toFixed(2)}
+                      ₹{Number(p.price).toLocaleString('en-IN')}
                     </td>
 
                     {/* Stock with inline quick buttons */}
@@ -528,7 +528,7 @@ export default function Admin() {
                     </td>
 
                     <td className="p-3.5 font-bold text-cyan-400 text-sm">
-                      ${o.total.toFixed(2)}
+                      ₹{Number(o.total).toLocaleString('en-IN')}
                     </td>
 
                     <td className="p-3.5">
@@ -712,26 +712,26 @@ export default function Admin() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Price ($ USD)</label>
+                  <label className="block text-slate-300 font-semibold mb-1">Price (₹ INR)</label>
                   <input
                     type="number"
-                    step="0.01"
+                    step="1"
                     value={productForm.price}
                     onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
                     required
-                    placeholder="1999.99"
+                    placeholder="169999"
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Original / Strikethrough Price ($)</label>
+                  <label className="block text-slate-300 font-semibold mb-1">Original / Strikethrough Price (₹)</label>
                   <input
                     type="number"
-                    step="0.01"
+                    step="1"
                     value={productForm.original_price}
                     onChange={(e) => setProductForm({ ...productForm, original_price: e.target.value })}
-                    placeholder="2399.99"
+                    placeholder="229999"
                     className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-100 font-mono"
                   />
                 </div>

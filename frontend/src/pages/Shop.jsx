@@ -31,7 +31,7 @@ export default function Shop() {
   const [category, setCategory] = useState('All');
   const [condition, setCondition] = useState('All');
   const [selectedBrand, setSelectedBrand] = useState('All');
-  const [maxPrice, setMaxPrice] = useState(5000);
+  const [maxPrice, setMaxPrice] = useState(400000);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState('featured');
 
@@ -87,7 +87,7 @@ export default function Shop() {
         if (category && category !== 'All') params.append('category', category);
         if (condition && condition !== 'All') params.append('condition', condition);
         if (selectedBrand && selectedBrand !== 'All') params.append('brand', selectedBrand);
-        if (maxPrice < 5000) params.append('maxPrice', maxPrice);
+        if (maxPrice < 400000) params.append('maxPrice', maxPrice);
         if (inStockOnly) params.append('inStock', '1');
         if (sortBy) params.append('sort', sortBy);
 
@@ -110,7 +110,7 @@ export default function Shop() {
     setCategory('All');
     setCondition('All');
     setSelectedBrand('All');
-    setMaxPrice(5000);
+    setMaxPrice(400000);
     setInStockOnly(false);
     setSortBy('featured');
     navigate('/shop');
@@ -121,7 +121,7 @@ export default function Shop() {
     category !== 'All' ||
     condition !== 'All' ||
     selectedBrand !== 'All' ||
-    maxPrice < 5000 ||
+    maxPrice < 400000 ||
     inStockOnly;
 
   return (
@@ -291,21 +291,21 @@ export default function Shop() {
             <div className="space-y-2 pt-2 border-t border-slate-800">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-slate-300">Max Budget</span>
-                <span className="font-black text-cyan-400">${maxPrice.toLocaleString()}</span>
+                <span className="font-black text-cyan-400">₹{maxPrice.toLocaleString('en-IN')}</span>
               </div>
               <input
                 type="range"
-                min="50"
-                max="5000"
-                step="50"
+                min="5000"
+                max="400000"
+                step="5000"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="w-full accent-cyan-400 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                <span>$50</span>
-                <span>$2,500</span>
-                <span>$5,000</span>
+                <span>₹5,000</span>
+                <span>₹2,00,000</span>
+                <span>₹4,00,000</span>
               </div>
             </div>
 
@@ -411,10 +411,10 @@ export default function Shop() {
                   <button onClick={() => setSearch('')}><X className="w-3 h-3" /></button>
                 </span>
               )}
-              {maxPrice < 5000 && (
+              {maxPrice < 400000 && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-slate-900 border border-slate-700 text-slate-300">
-                  Under ${maxPrice.toLocaleString()}
-                  <button onClick={() => setMaxPrice(5000)}><X className="w-3 h-3" /></button>
+                  Under ₹{maxPrice.toLocaleString('en-IN')}
+                  <button onClick={() => setMaxPrice(400000)}><X className="w-3 h-3" /></button>
                 </span>
               )}
               <button
@@ -531,13 +531,13 @@ export default function Shop() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="font-bold text-slate-300">Max Budget:</span>
-                <span className="font-bold text-cyan-400">${maxPrice}</span>
+                <span className="font-bold text-cyan-400">₹{maxPrice.toLocaleString('en-IN')}</span>
               </div>
               <input
                 type="range"
-                min="50"
-                max="5000"
-                step="50"
+                min="5000"
+                max="400000"
+                step="5000"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="w-full accent-cyan-400"

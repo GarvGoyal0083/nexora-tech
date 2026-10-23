@@ -188,11 +188,11 @@ export default function Home() {
 
                     <div className="flex items-baseline justify-between pt-2">
                       <div>
-                        <span className="text-2xl font-black text-cyan-400">$3,299.99</span>
-                        <span className="text-xs text-slate-500 line-through ml-2">$3,999.99</span>
+                        <span className="text-2xl font-black text-cyan-400">₹2,74,999</span>
+                        <span className="text-xs text-slate-500 line-through ml-2">₹3,34,999</span>
                       </div>
                       <span className="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        SAVE $700
+                        SAVE ₹60,000
                       </span>
                     </div>
 
@@ -472,7 +472,7 @@ export default function Home() {
                 ))}
               </div>
               <p className="text-xs text-slate-300 italic leading-relaxed">
-                "Bought a Certified Refurbished M3 Max MacBook Pro 16. It arrived packed like Fort Knox with sealed Apple charger and zero marks. Battery health was 100%. Saved $700 vs new."
+                "Bought a Certified Refurbished M3 Max MacBook Pro 16. It arrived packed like Fort Knox with sealed Apple charger and zero marks. Battery health was 100%. Saved ₹60,000 vs new."
               </p>
             </div>
             <div className="pt-4 border-t border-slate-800/80 mt-4 flex items-center justify-between text-xs">

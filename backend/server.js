@@ -750,7 +750,7 @@ app.post('/api/coupons/validate', (req, res) => {
 
     if (subtotal < coupon.min_order) {
       return res.status(400).json({
-        error: `Coupon ${coupon.code} requires a minimum order of $${coupon.min_order.toFixed(2)}`
+        error: `Coupon ${coupon.code} requires a minimum order of ₹${coupon.min_order.toLocaleString('en-IN')}`
       });
     }
 

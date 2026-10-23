@@ -128,7 +128,7 @@ export default function Navbar({ onOpenCartDrawer }) {
           <div className="flex items-center gap-4 text-xs">
             <span className="hidden md:flex items-center gap-1 text-emerald-400">
               <Zap className="w-3 h-3" />
-              Free Priority Shipping over $150
+              Free Priority Shipping over ₹10,000
             </span>
             <div className="flex items-center gap-2 border-l border-slate-700 pl-3">
               <span className="text-slate-400">Fast Demo:</span>
@@ -247,10 +247,10 @@ export default function Navbar({ onOpenCartDrawer }) {
                           <p className="text-xs text-slate-400 truncate">{item.short_description}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-cyan-400">${item.price.toFixed(2)}</p>
+                          <p className="text-sm font-bold text-cyan-400">₹{Number(item.price).toLocaleString('en-IN')}</p>
                           {item.original_price > item.price && (
                             <p className="text-[11px] text-slate-500 line-through">
-                              ${item.original_price.toFixed(2)}
+                              ₹{Number(item.original_price).toLocaleString('en-IN')}
                             </p>
                           )}
                         </div>
@@ -304,7 +304,7 @@ export default function Navbar({ onOpenCartDrawer }) {
               <ShoppingCart className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
               <div className="hidden sm:block text-left leading-tight">
                 <span className="text-[10px] text-slate-400 block">Cart</span>
-                <span className="text-xs font-bold text-white">${subtotal.toFixed(2)}</span>
+                <span className="text-xs font-bold text-white">₹{Number(subtotal).toLocaleString('en-IN')}</span>
               </div>
               {totalItemsCount > 0 && (
                 <span className="w-5 h-5 rounded-full bg-cyan-400 text-black text-xs font-extrabold flex items-center justify-center">
