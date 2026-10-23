@@ -35,7 +35,7 @@ function MainLayout() {
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#07090e] text-slate-100 font-sans selection:bg-cyan-500 selection:text-black">
+    <div className="min-h-screen flex flex-col bg-white text-neutral-900 font-sans selection:bg-black selection:text-white">
       <ScrollToTop />
       <Navbar onOpenCartDrawer={() => setCartDrawerOpen(true)} />
       <CartDrawer
